@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+
+# uv / virtualenv
+.venv/
+.uv/
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoint
+
+# Lokaler Data Lake (nicht in Git — Daten sind groß und extern reproduzierbar)
+data/raw/
+data/processed/
+data/tiles/
+*.parquet
+*.tif
+*.tiff
+*.geotiff
+
+# Credentials
+.env
+
+# IDEs
+.vscode/settings.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

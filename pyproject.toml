@@ -1,0 +1,65 @@
+[project]
+name = "biodiv-horizon"
+version = "0.1.0"
+description = "Interaktiver Prototyp: Copernicus + GBIF Daten für Biodiversitäts-Monitoring in Österreich"
+readme = "README.md"
+authors = [
+    { name = "Daniel Aschauer", email = "daniel.aschauer@bitessenz.at" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    # --- Spatial Ingestion & Processing ---
+    "pystac-client>=0.8",          # STAC-Katalog-Suche (CDSE, Element84)
+    "rasterio>=1.4",               # GeoTIFF lesen/schreiben
+    "rioxarray>=0.17",             # xarray + rasterio (Raster als DataArrays)
+    "geopandas>=1.0",              # Vektor-Operationen (Spatial Joins, Clips)
+    "shapely>=2.0",                # Geometrie-Engine
+    "pyproj>=3.7",                 # CRS-Transformationen
+    "rasterstats>=0.20",           # Zonal Statistics & Point Extraction
+    "xarray>=2024.6",              # N-dimensionale Rasterdaten
+    # --- GBIF Daten ---
+    "pygbif>=0.6",                 # GBIF API Client
+    # --- Analytics ---
+    "duckdb>=1.1",                 # In-Memory Spatial Analytics + GeoParquet
+    "pyarrow>=17.0",               # GeoParquet/Parquet I/O
+    # --- Backend ---
+    "fastapi>=0.115",              # REST API Framework
+    "uvicorn[standard]>=0.32",     # ASGI Server
+    "httpx>=0.27",                 # Async HTTP Client
+    "rio-tiler>=7.0",              # COG → dynamische Karten-Tiles
+    "python-dotenv>=1.0",          # .env Datei laden
+    # --- Notebooks & Visualisierung ---
+    "jupyter>=1.1",                # Jupyter Lab/Notebook
+    "ipykernel>=6.29",             # Python Kernel für Jupyter
+    "matplotlib>=3.9",             # Plots in Notebooks
+    "folium>=0.18",                # Schnelle interaktive Karten in Notebooks
+    "mapclassify>=2.8",            # Choropleth-Klassifikationen
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.7",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+biodiv-pipeline = "biodiv_horizon.scripts.build_data_lake:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/biodiv_horizon"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

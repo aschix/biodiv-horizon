@@ -428,15 +428,48 @@ Ein **visuell beeindruckendes, interaktives Dashboard**, das beim Öffnen im Bro
 
 ---
 
-## Open Questions
+## Setup-TODO-Liste & Accounts für Daniel
 
-1. **CDSE-Account:** Hast du bereits einen Account auf [dataspace.copernicus.eu](https://dataspace.copernicus.eu/)? Falls nicht, ist die Registrierung kostenlos und Voraussetzung für den STAC-API-Zugang.
+Hier sind die organisatorischen und Account-bezogenen Vorbereitungen, die für die Durchführung der nächsten Sprints benötigt werden:
 
-2. **GBIF-Account:** Für Downloads über 10.000 Records benötigt GBIF einen Account ([gbif.org/user/profile](https://www.gbif.org/user/profile)). Hast du einen?
+- [ ] **1. GitHub Repo anlegen (Priorität: Sofort)**
+  - Auf [github.com/new](https://github.com/new) ein privates Repo namens `biodiv-horizon` anlegen.
+  - *Hinweis:* Keine README / .gitignore anhaken (ist lokal bereits alles committed).
+  - Anschließend: `git push -u origin main` (oder im Chat kurz Bescheid geben, damit der Push automatisch ausgeführt wird).
 
-3. **Administrative Grenzen Österreich:** Die Natura2000-Gebietsgrenzen sind über das [Umweltbundesamt](https://www.umweltbundesamt.at/umweltthemen/naturschutz/natura-2000) als Shapefile verfügbar. Alternativ via [data.gv.at](https://www.data.gv.at/). Sollen beide Quellen integriert werden?
+- [ ] **2. Lokale `.env`-Datei anlegen**
+  - Vorlage kopieren: `cp .env.example .env`
+  - In dieser Datei werden die Login-Daten für CDSE und GBIF eingetragen (ist per `.gitignore` vor Git geschützt).
 
-4. **Hosting-Strategie für Demo:** Soll der Prototyp lokal laufen (Docker Compose) oder soll schon ein einfaches Cloud-Deployment (z.B. Fly.io, Render, Hetzner) eingeplant werden?
+- [ ] **3. Copernicus Data Space Ecosystem (CDSE) Account (Wichtig für Sprint 2)**
+  - Kostenlos registrieren unter: [dataspace.copernicus.eu](https://dataspace.copernicus.eu/)
+  - E-Mail bestätigen.
+  - In `.env` eintragen:
+    ```env
+    CDSE_USERNAME=deine-email@domain.at
+    CDSE_PASSWORD=dein-passwort
+    ```
+  - *Zweck:* Ermöglicht den programmatischen Download der hochauflösenden Copernicus CLMS-Rasterlayer (Versiegelung, Baumbestand etc.).
+
+- [ ] **4. GBIF-Account anlegen (Wichtig für Sprint 3)**
+  - Kostenlos registrieren unter: [gbif.org/user/profile](https://www.gbif.org/user/profile)
+  - In `.env` eintragen:
+    ```env
+    GBIF_USERNAME=dein_gbif_nutzername
+    GBIF_PASSWORD=dein_gbif_passwort
+    GBIF_EMAIL=deine-email@domain.at
+    ```
+  - *Zweck:* Kleine Abfragen (< 10.000 Punkte) funktionieren zwar anonym, aber für vollständige Occurrence-Downloads in Österreich verlangt die GBIF-API zwingend Benutzer-Credentials.
+
+- [ ] **5. Geodaten-Quellen (Administrative & Schutzgebietsgrenzen - Sprint 3/4)**
+  - **Entscheidung:** Wir integrieren standardmäßig die offiziellen Vektordaten von [data.gv.at](https://www.data.gv.at/) und dem Umweltbundesamt (UBA):
+    - Natura-2000-Gebietsgrenzen (FFH- und Vogelschutzgebiete)
+    - Nationalpark-Außengrenzen
+  - *Aktion für Daniel:* Keine manuelle Vorarbeit nötig — der Download wird über `src/biodiv_horizon/ingestion/admin_boundaries.py` automatisiert per Skript durchgeführt.
+
+- [ ] **6. Hosting / Demo-Strategie (Sprint 5/6)**
+  - **Status:** Für Phase 1 läuft alles **lokal via Docker Compose** / FastAPI + Webbrowser.
+  - Ein Cloud-Deployment (z.B. Hetzner Cloud / Fly.io) wird optional für den späteren netidee-Pitch in Phase 5 vorbereitet.
 
 ---
 

@@ -17,9 +17,15 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import time
+
 import requests
-import rioxarray  # noqa: F401  — registriert .rio accessor
-import xarray as xr
+try:
+    import rioxarray  # noqa: F401  — registriert .rio accessor
+    import xarray as xr
+except (ImportError, OSError):
+    rioxarray = None
+    xr = None
 from pystac_client import Client
 from pystac_client.exceptions import APIError
 
@@ -56,10 +62,20 @@ def list_collections(catalog: Client) -> list[str]:
     return names
 
 
+# Standard CLMS-Collections für Europa im CDSE STAC-Katalog (Pan-European VLCC / High Resolution Layers)
+DEFAULT_CLMS_COLLECTIONS: list[str] = [
+    "clms_vlcc_tree-cover-density_europe_10m_yearly_v1",
+    "clms_vlcc_grassland_europe_10m_yearly_v1",
+    "clms_vlcc_forest-type_europe_10m_3yearly_v1",
+    "clms_vlcc_dominant-leaf-type_europe_10m_yearly_v1",
+]
+
+
 def search_clms_items(
     catalog: Client,
     bbox: list[float] | None = None,
-    datetime_range: str = "2023-01-01/2023-12-31",
+    datetime_range: str = "2021-01-01/2023-12-31",
+    collections: list[str] | None = None,
     max_items: int = 50,
 ) -> list:
     """Sucht CLMS-Items im STAC-Katalog für das angegebene Gebiet.
@@ -67,36 +83,44 @@ def search_clms_items(
     Args:
         catalog: Geöffneter CDSE STAC-Client
         bbox: [min_lon, min_lat, max_lon, max_lat] in WGS84
-        datetime_range: ISO8601 Zeitraum, z.B. "2023-01-01/2023-12-31"
-        max_items: Maximale Anzahl zurückgegebener Items
+        datetime_range: ISO8601 Zeitraum, z.B. "2021-01-01/2023-12-31"
+        collections: Liste der STAC-Collection-IDs (Standard: DEFAULT_CLMS_COLLECTIONS)
+        max_items: Maximale Anzahl zurückgegebener Items pro Collection
 
     Returns:
         Liste der gefundenen STAC-Items
     """
     bbox = bbox or DOWNLOAD_BBOX
-
-    # CDSE bietet CLMS-Produkte unter verschiedenen Collection-IDs an.
-    # Wir suchen breit und filtern dann nach Produkttyp.
-    clms_collection_ids = [
-        "CLMS_GLOBAL",
-        "CLMS_EUROPE",
-        "CLMS",
-    ]
+    collection_ids = collections or DEFAULT_CLMS_COLLECTIONS
 
     all_items = []
-    for collection_id in clms_collection_ids:
-        try:
-            search = catalog.search(
-                collections=[collection_id],
-                bbox=bbox,
-                datetime=datetime_range,
-                max_items=max_items,
-            )
-            items = list(search.items())
-            logger.info("Collection '%s': %d Items gefunden", collection_id, len(items))
-            all_items.extend(items)
-        except APIError as e:
-            logger.warning("Collection '%s' nicht verfügbar: %s", collection_id, e)
+    for collection_id in collection_ids:
+        for attempt in range(3):
+            try:
+                search = catalog.search(
+                    collections=[collection_id],
+                    bbox=bbox,
+                    datetime=datetime_range,
+                    max_items=max_items,
+                )
+                items = list(search.items())
+                logger.info("Collection '%s': %d Items gefunden", collection_id, len(items))
+                all_items.extend(items)
+                time.sleep(0.5)  # Schont das CDSE WAF Rate-Limit
+                break
+            except APIError as e:
+                if "429" in str(e) or "Rate limit" in str(e):
+                    wait_sec = 1.5 * (attempt + 1)
+                    logger.warning(
+                        "CDSE Rate-Limit bei Collection '%s', warte %.1fs (Versuch %d/3)...",
+                        collection_id,
+                        wait_sec,
+                        attempt + 1,
+                    )
+                    time.sleep(wait_sec)
+                    continue
+                logger.warning("Collection '%s' nicht verfügbar oder Fehler: %s", collection_id, e)
+                break
 
     return all_items
 
@@ -161,6 +185,14 @@ def download_and_clip_raster(
 
     logger.info("Lade Raster: %s", href)
     logger.info("Clip auf BBox: %s → CRS: %s", bbox, target_crs)
+
+    global rioxarray, xr
+    if xr is None or rioxarray is None:
+        import rioxarray as _rxr  # noqa: F401
+        import xarray as _xr
+
+        rioxarray = _rxr
+        xr = _xr
 
     # Raster via rioxarray öffnen (unterstützt http://, s3://, lokal)
     ds: xr.DataArray = rioxarray.open_rasterio(

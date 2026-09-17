@@ -37,13 +37,13 @@ graph TD
 
 ## 2. Institutionen & Plattformen
 
-| Abkürzung | Vollständiger Name | Bedeutung & Rolle |
-| :--- | :--- | :--- |
-| **CDSE** | **Copernicus Data Space Ecosystem** | Das zentrale Cloud-Portal und Datenarchiv der EU/ESA (seit 2023). Es bündelt alle Sentinel-Rohdaten und viele abgeleitete Services an einem Ort und bietet STAC-APIs, S3-Objektspeicher und OpenEO. |
-| **EEA** | **European Environment Agency** *(Europäische Umweltagentur)* | EU-Behörde mit Sitz in Kopenhagen. Sie koordiniert und betreibt u. a. die kontinentalen europäischen Produkte des CLMS. |
-| **CLMS** | **Copernicus Land Monitoring Service** | Der thematische Kerndienst für Vegetations-, Boden-, Wasser-, Schnee- und Landbedeckungsdaten (z. B. CORINE Land Cover, Urban Atlas). |
-| **HRL** | **High Resolution Layers** | Spezialisierte Rasterprodukte des CLMS (10 m bis 20 m Auflösung) für Europa: *Tree Cover Density*, *Imperviousness*, *Grassland*, *Water & Wetness*, *Small Woody Features*. |
-| **VLCC** | **Vegetation and Land Cover Components** | Die moderne Nachfolge- und Weiterentwicklungsserie der HRLs (ab Referenzjahr 2021/2022), die pan-europäisch jährlich mit 10 m Auflösung gerechnet wird. |
+| Abkürzung | Vollständiger Name                                            | Bedeutung & Rolle                                                                                                                                                                                   |
+| :-------- | :------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CDSE**  | **Copernicus Data Space Ecosystem**                           | Das zentrale Cloud-Portal und Datenarchiv der EU/ESA (seit 2023). Es bündelt alle Sentinel-Rohdaten und viele abgeleitete Services an einem Ort und bietet STAC-APIs, S3-Objektspeicher und OpenEO. |
+| **EEA**   | **European Environment Agency** *(Europäische Umweltagentur)* | EU-Behörde mit Sitz in Kopenhagen. Sie koordiniert und betreibt u. a. die kontinentalen europäischen Produkte des CLMS.                                                                             |
+| **CLMS**  | **Copernicus Land Monitoring Service**                        | Der thematische Kerndienst für Vegetations-, Boden-, Wasser-, Schnee- und Landbedeckungsdaten (z. B. CORINE Land Cover, Urban Atlas).                                                               |
+| **HRL**   | **High Resolution Layers**                                    | Spezialisierte Rasterprodukte des CLMS (10 m bis 20 m Auflösung) für Europa: *Tree Cover Density*, *Imperviousness*, *Grassland*, *Water & Wetness*, *Small Woody Features*.                        |
+| **VLCC**  | **Vegetation and Land Cover Components**                      | Die moderne Nachfolge- und Weiterentwicklungsserie der HRLs (ab Referenzjahr 2021/2022), die pan-europäisch jährlich mit 10 m Auflösung gerechnet wird.                                             |
 
 ---
 
@@ -355,10 +355,10 @@ median_ndvi.download("donau_auen_ndvi_sommer2024.tif")
 
 ### 5. Wann nutzen wir was? (Der Copernicus-Werkzeugkasten)
 
-| Anwendungsfall | Beste Schnittstelle | Typisches Tool / Library | Vorteil |
-| :--- | :--- | :--- | :--- |
-| **Fertige Vegetations-/Waldlayer (10m)** | **CDSE STAC** | `pystac_client`, `rioxarray` | Direkter Zugriff auf fertige europäische CLMS-Rasterkacheln; Streaming per COG. |
-| **Versiegelung & Feuchte (Ausschnitt)** | **EEA REST / WCS** | `requests`, `rioxarray` | Schneller BBox-Zuschnitt für Layer, die auf CDSE STAC noch nicht isoliert vorliegen. |
-| **Individuelle Spektralanalysen & Zeitreihen** | **openEO (CDSE)** | `openeo` Python SDK | Cloud-native Berechnung direkt am Rohdatenspeicher (kein Download von Roh-Szenen). |
-| **Manuelle Sichtung & Validierung** | **CLMS Web Portal / CDSE Browser** | Web-Browser | Interaktiver Pixel-Inspektor, Legenden und sofortige visuelle Plausibilisierung. |
+| Anwendungsfall                                 | Beste Schnittstelle                | Typisches Tool / Library     | Vorteil                                                                              |
+| :--------------------------------------------- | :--------------------------------- | :--------------------------- | :----------------------------------------------------------------------------------- |
+| **Fertige Vegetations-/Waldlayer (10m)**       | **CDSE STAC**                      | `pystac_client`, `rioxarray` | Direkter Zugriff auf fertige europäische CLMS-Rasterkacheln; Streaming per COG.      |
+| **Versiegelung & Feuchte (Ausschnitt)**        | **EEA REST / WCS**                 | `requests`, `rioxarray`      | Schneller BBox-Zuschnitt für Layer, die auf CDSE STAC noch nicht isoliert vorliegen. |
+| **Individuelle Spektralanalysen & Zeitreihen** | **openEO (CDSE)**                  | `openeo` Python SDK          | Cloud-native Berechnung direkt am Rohdatenspeicher (kein Download von Roh-Szenen).   |
+| **Manuelle Sichtung & Validierung**            | **CLMS Web Portal / CDSE Browser** | Web-Browser                  | Interaktiver Pixel-Inspektor, Legenden und sofortige visuelle Plausibilisierung.     |
 

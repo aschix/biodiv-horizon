@@ -62,12 +62,11 @@ def list_collections(catalog: Client) -> list[str]:
     return names
 
 
-# Standard CLMS-Collections für Europa im CDSE STAC-Katalog (Pan-European VLCC / High Resolution Layers)
+# Standard CLMS-Collections für STAC, direkt abgeleitet aus CLMS_LAYERS (Single Source of Truth)
 DEFAULT_CLMS_COLLECTIONS: list[str] = [
-    "clms_vlcc_tree-cover-density_europe_10m_yearly_v1",
-    "clms_vlcc_grassland_europe_10m_yearly_v1",
-    "clms_vlcc_forest-type_europe_10m_3yearly_v1",
-    "clms_vlcc_dominant-leaf-type_europe_10m_yearly_v1",
+    layer["stac_collection"]
+    for layer in CLMS_LAYERS.values()
+    if layer.get("stac_collection")
 ]
 
 
@@ -246,6 +245,7 @@ def download_all_clms_layers(
     """
     bbox = bbox or DOWNLOAD_BBOX
     output_dir = output_dir or COPERNICUS_DIR
+    stac_items = stac_items or []
 
     downloaded: dict[str, Path] = {}
 
@@ -257,39 +257,67 @@ def download_all_clms_layers(
             downloaded[layer_key] = output_path
             continue
 
-        # Passendes STAC-Item für diesen Layer finden
+        # 1. Weg: Über STAC-Item herunterladen
         matching_item = _find_matching_item(stac_items, layer_key)
-        if matching_item is None:
-            logger.warning("Kein STAC-Item für Layer '%s' gefunden", layer_key)
-            continue
+        if matching_item is not None:
+            asset_href = _get_asset_href(matching_item)
+            if asset_href:
+                try:
+                    downloaded[layer_key] = download_and_clip_raster(
+                        href=asset_href,
+                        bbox=bbox,
+                        output_path=output_path,
+                    )
+                    continue
+                except Exception as e:
+                    logger.warning("Download via STAC fehlgeschlagen für '%s': %s", layer_key, e)
 
-        # Asset-URL extrahieren (CDSE verwendet 'data' oder 'download' als Asset-Key)
-        asset_href = _get_asset_href(matching_item)
-        if asset_href is None:
-            logger.warning("Kein Download-Asset in Item '%s'", matching_item.id)
-            continue
+        # 2. Weg: Fallback auf EEA WCS (z.B. Imperviousness, Water/Wetness)
+        wcs_layer = layer_info.get("wcs_layer")
+        if wcs_layer:
+            try:
+                logger.info("Lade Layer '%s' via WCS (%s)...", layer_key, wcs_layer)
+                downloaded[layer_key] = download_clms_via_wcs(
+                    layer=wcs_layer,
+                    bbox=bbox,
+                    output_path=output_path,
+                )
+                continue
+            except Exception as e:
+                logger.warning("Download via WCS fehlgeschlagen für '%s': %s", layer_key, e)
 
-        downloaded[layer_key] = download_and_clip_raster(
-            href=asset_href,
-            bbox=bbox,
-            output_path=output_path,
-        )
+        logger.warning("Keine Datenquelle für Layer '%s' verfügbar", layer_key)
 
     return downloaded
 
 
 def _find_matching_item(items: list, layer_key: str):
-    """Findet das STAC-Item das einem CLMS-Layer entspricht."""
+    """Findet das STAC-Item, das einem CLMS-Layer entspricht.
+
+    Vergleicht primär die definierte stac_collection in CLMS_LAYERS
+    und nutzt Keywords nur als sekundären Fallback.
+    """
+    layer_info = CLMS_LAYERS.get(layer_key, {})
+    target_collection = layer_info.get("stac_collection")
+
+    # 1. Direkter Abgleich über stac_collection
+    if target_collection:
+        for item in items:
+            if getattr(item, "collection_id", None) == target_collection:
+                return item
+
+    # 2. Fallback: Keyword-Matching
     layer_keywords = {
-        "imperviousness": ["IMD", "Imperviousness", "imperviousness"],
         "tree_cover": ["TCD", "Tree", "tree_cover"],
         "grassland": ["GRA", "Grassland", "grassland"],
+        "forest_type": ["FTY", "Forest", "forest_type"],
+        "imperviousness": ["IMD", "Imperviousness", "imperviousness"],
         "water_wetness": ["WAW", "Water", "Wetness", "wetness"],
     }
     keywords = layer_keywords.get(layer_key, [layer_key])
 
     for item in items:
-        title = item.properties.get("title", "") + item.id
+        title = (item.properties.get("title", "") or "") + " " + item.id
         if any(kw.lower() in title.lower() for kw in keywords):
             return item
     return None

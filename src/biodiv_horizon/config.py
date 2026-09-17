@@ -91,21 +91,17 @@ LEITARTEN: dict[str, dict] = {
     },
 }
 
-# --- Copernicus CLMS Layer-Definitionen ---
+# --- Copernicus CLMS Layer-Definitionen (Single Source of Truth) ---
 CLMS_LAYERS: dict[str, dict] = {
-    "imperviousness": {
-        "description": "Versiegelungsgrad (%)",
-        "unit": "%",
-        "range": (0, 100),
-        "colormap": "Reds",
-        "filename": "imperviousness_density.tif",
-    },
     "tree_cover": {
         "description": "Baumbestand / Tree Cover Density (%)",
         "unit": "%",
         "range": (0, 100),
         "colormap": "Greens",
         "filename": "tree_cover_density.tif",
+        "source": "stac",
+        "stac_collection": "clms_vlcc_tree-cover-density_europe_10m_yearly_v1",
+        "wcs_layer": "TCD_2018",
     },
     "grassland": {
         "description": "Grünland (binär: 0/1)",
@@ -113,6 +109,29 @@ CLMS_LAYERS: dict[str, dict] = {
         "range": (0, 1),
         "colormap": "YlGn",
         "filename": "grassland.tif",
+        "source": "stac",
+        "stac_collection": "clms_vlcc_grassland_europe_10m_yearly_v1",
+        "wcs_layer": "GRA_2018",
+    },
+    "forest_type": {
+        "description": "Waldtyp (Laub-/Nadel-/Mischwald)",
+        "unit": "Klassen",
+        "range": (1, 3),
+        "colormap": "Dark2",
+        "filename": "forest_type.tif",
+        "source": "stac",
+        "stac_collection": "clms_vlcc_forest-type_europe_10m_3yearly_v1",
+        "wcs_layer": None,
+    },
+    "imperviousness": {
+        "description": "Versiegelungsgrad (%)",
+        "unit": "%",
+        "range": (0, 100),
+        "colormap": "Reds",
+        "filename": "imperviousness_density.tif",
+        "source": "wcs",
+        "stac_collection": None,  # Auf CDSE STAC nicht als Einzel-Layer -> EEA WCS
+        "wcs_layer": "IMD_2018",
     },
     "water_wetness": {
         "description": "Wasserflächen & Feuchtgebiete (binär: 0/1)",
@@ -120,6 +139,9 @@ CLMS_LAYERS: dict[str, dict] = {
         "range": (0, 1),
         "colormap": "Blues",
         "filename": "water_wetness.tif",
+        "source": "wcs",
+        "stac_collection": None,  # Auf CDSE STAC unvollständig -> EEA WCS
+        "wcs_layer": "WAW_2018",
     },
 }
 

@@ -42,7 +42,11 @@ cp .env.example .env
 ### Jupyter Notebooks starten
 
 ```bash
-uv run jupyter lab
+# Im Browser via JupyterLab
+uv run python -m jupyterlab
+
+# Oder direkt in VS Code / Antigravity IDE:
+# Einfach notebooks/01_explore_cdse_stac.ipynb öffnen und den Kernel .venv (Python) auswählen.
 ```
 
 ### API-Server starten

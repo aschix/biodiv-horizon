@@ -273,3 +273,92 @@ sequenceDiagram
 
 Durch diese Array-Indexierung dauert die Anreicherung von Tausenden Tierbeobachtungen mit Umweltvariablen nur wenige Millisekunden.
 
+---
+
+## 8. openEO: Der europäische Standard für Cloud-Processing
+
+Im Notebook `01_explore_cdse_stac.ipynb` taucht in Abschnitt 5 **openEO** auf. Doch was unterscheidet openEO von STAC oder WCS?
+
+### 1. Das Kernproblem vor openEO: Vendor Lock-in & "Data Gravity"
+
+* **Datenvolumen (Data Gravity):** Ein Jahr Sentinel-2-Daten für Österreich umfasst mehrere Terabyte. Diese Daten auf lokale Rechner herunterzuladen, nur um einen Vegetationsindex (NDVI) zu berechnen, ist ineffizient und bandbreitenintensiv.
+* **Plattform-Silos:** Vor openEO musste man Algorithmen für jedes Backend neu schreiben (Google Earth Engine API, Sentinel Hub Scripting, AWS Lambda, EODC).
+
+### 2. Das openEO-Prinzip: "Bring the Code to the Data"
+
+**openEO** ist ein von der EU und ESA geförderter, offener Standard (maßgeblich mitentwickelt an der TU Wien und EODC). Er definiert eine einheitliche Spezifikation, um Erdbeobachtungsdaten **direkt in der Cloud** auszuwerten:
+
+```mermaid
+graph LR
+    subgraph Client["💻 Lokaler Rechner (BioDiv-Horizon)"]
+        Py["Python / R / JS Client<br/>(openeo-python-client)"]
+        Graph["Process Graph (JSON)<br/>Beschreibt Berechnung lazy"]
+    end
+
+    subgraph CDSE["☁️ Copernicus Data Space Cloud (openEO Backend)"]
+        Engine["openEO Processing Engine<br/>(Dask / Apache Spark)"]
+        Storage[("Petabytes an Sentinel-1/2<br/>& CLMS Layern")]
+    end
+
+    Py -->|"1. Definiert Pipeline"| Graph
+    Graph -->|"2. Sendet Graph an API"| Engine
+    Engine <-->|"3. Cloud-Berechnung am Speicher"| Storage
+    Engine -->|"4. Liefert nur schlankes Ergebnis (GeoTIFF/CSV)"| Py
+```
+
+### 3. Schlüsselkonzepte in openEO
+
+1. **Spatio-Temporal Data Cubes (Raster-Datenwürfel):**
+   openEO modelliert Satellitendaten als 4-dimensionale Würfel:
+   $$\text{Cube}(x, y, \text{Band}, \text{Zeit})$$
+   Man wählt ein Raumfenster (z. B. Nationalpark Donau-Auen), ein Zeitfenster (z. B. Mai bis August 2024) und die Kanäle (Rot & NIR).
+2. **Lazy Evaluation & Process Graphs:**
+   Methodenaufrufe wie `cube.filter_bands()`, `cube.reduce_dimension()` oder `(nir - red) / (nir + red)` führen **keine lokale Berechnung** aus. Sie bauen einen mathematischen Berechnungsgraphen (DAG in JSON) auf.
+3. **Ausführung in der Cloud:**
+   * **Synchrone Abfrage (`download()`):** Für kleine Gebiete und schnelle Checks. Die Cloud rechnet das Ergebnis ad-hoc und streamt das fertige TIFF zurück.
+   * **Batch Jobs (`create_job()`):** Für landesweite Analysen (ganz Österreich). Der Job wird in der CDSE-Cloud eingereiht, läuft auf verteilten Clustern, und benachrichtigt nach Abschluss.
+
+### 4. Code-Beispiel: NDVI-Zeitreihe direkt in der Cloud rechnen
+
+```python
+import openeo
+
+# 1. Verbindung zum kostenlosen CDSE openEO-Endpunkt herstellen
+conn = openeo.connect("https://openeo.dataspace.copernicus.eu")
+conn.authenticate_oidc()  # Nutzt CDSE-Account
+
+# 2. Raum-zeitlichen Datenwürfel definieren (Nationalpark Donau-Auen)
+donau_auen_bbox = {"west": 16.5, "south": 48.08, "east": 16.95, "north": 48.22, "crs": "EPSG:4326"}
+
+cube = conn.load_collection(
+    "SENTINEL2_L2A",
+    spatial_extent=donau_auen_bbox,
+    temporal_extent=["2024-05-01", "2024-08-31"],
+    bands=["B04", "B08", "SCL"],  # Rot, NIR, Scene Classification
+)
+
+# 3. Wolken filtern (SCL: 4=Vegetation, 5=Boden)
+cloud_mask = ~cube.band("SCL").isin([4, 5])
+clean_cube = cube.mask(cloud_mask)
+
+# 4. NDVI berechnen und zeitlichen Median bilden
+red = clean_cube.band("B04")
+nir = clean_cube.band("B08")
+ndvi = (nir - red) / (nir + red)
+median_ndvi = ndvi.reduce_dimension(dimension="t", reducer="median")
+
+# 5. Nur das fertige 2D-Ergebnis (wenige Megabytes) herunterladen
+median_ndvi.download("donau_auen_ndvi_sommer2024.tif")
+```
+
+---
+
+### 5. Wann nutzen wir was? (Der Copernicus-Werkzeugkasten)
+
+| Anwendungsfall | Beste Schnittstelle | Typisches Tool / Library | Vorteil |
+| :--- | :--- | :--- | :--- |
+| **Fertige Vegetations-/Waldlayer (10m)** | **CDSE STAC** | `pystac_client`, `rioxarray` | Direkter Zugriff auf fertige europäische CLMS-Rasterkacheln; Streaming per COG. |
+| **Versiegelung & Feuchte (Ausschnitt)** | **EEA REST / WCS** | `requests`, `rioxarray` | Schneller BBox-Zuschnitt für Layer, die auf CDSE STAC noch nicht isoliert vorliegen. |
+| **Individuelle Spektralanalysen & Zeitreihen** | **openEO (CDSE)** | `openeo` Python SDK | Cloud-native Berechnung direkt am Rohdatenspeicher (kein Download von Roh-Szenen). |
+| **Manuelle Sichtung & Validierung** | **CLMS Web Portal / CDSE Browser** | Web-Browser | Interaktiver Pixel-Inspektor, Legenden und sofortige visuelle Plausibilisierung. |
+

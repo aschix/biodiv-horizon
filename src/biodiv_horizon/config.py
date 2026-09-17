@@ -101,7 +101,7 @@ CLMS_LAYERS: dict[str, dict] = {
         "filename": "tree_cover_density.tif",
         "source": "stac",
         "stac_collection": "clms_vlcc_tree-cover-density_europe_10m_yearly_v1",
-        "wcs_layer": "TCD_2018",
+        "wcs_layer": "HRL_TreeCoverDensity_2018",
     },
     "grassland": {
         "description": "Grünland (binär: 0/1)",
@@ -111,7 +111,7 @@ CLMS_LAYERS: dict[str, dict] = {
         "filename": "grassland.tif",
         "source": "stac",
         "stac_collection": "clms_vlcc_grassland_europe_10m_yearly_v1",
-        "wcs_layer": "GRA_2018",
+        "wcs_layer": "HRL_Grassland_2018",
     },
     "forest_type": {
         "description": "Waldtyp (Laub-/Nadel-/Mischwald)",
@@ -121,7 +121,7 @@ CLMS_LAYERS: dict[str, dict] = {
         "filename": "forest_type.tif",
         "source": "stac",
         "stac_collection": "clms_vlcc_forest-type_europe_10m_3yearly_v1",
-        "wcs_layer": None,
+        "wcs_layer": "HRL_ForestType_2018",
     },
     "imperviousness": {
         "description": "Versiegelungsgrad (%)",
@@ -130,8 +130,8 @@ CLMS_LAYERS: dict[str, dict] = {
         "colormap": "Reds",
         "filename": "imperviousness_density.tif",
         "source": "wcs",
-        "stac_collection": None,  # Auf CDSE STAC nicht als Einzel-Layer -> EEA WCS
-        "wcs_layer": "IMD_2018",
+        "stac_collection": None,  # Auf CDSE STAC nicht als Einzel-Layer -> EEA DiscoMap
+        "wcs_layer": "HRL_ImperviousnessDensity_2018",
     },
     "water_wetness": {
         "description": "Wasserflächen & Feuchtgebiete (binär: 0/1)",
@@ -140,8 +140,8 @@ CLMS_LAYERS: dict[str, dict] = {
         "colormap": "Blues",
         "filename": "water_wetness.tif",
         "source": "wcs",
-        "stac_collection": None,  # Auf CDSE STAC unvollständig -> EEA WCS
-        "wcs_layer": "WAW_2018",
+        "stac_collection": None,  # Auf CDSE STAC unvollständig -> EEA DiscoMap
+        "wcs_layer": "HRL_WaterWetness_2018",
     },
 }
 

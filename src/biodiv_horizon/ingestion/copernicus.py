@@ -345,58 +345,66 @@ def download_clms_via_wcs(
     output_path: Path,
     resolution_m: int = 100,
 ) -> Path:
-    """Lädt CLMS-Layer via WCS-Request vom Copernicus Land Service.
+    """Lädt CLMS-Layer via EEA DiscoMap ImageServer (ArcGIS REST API).
 
-    Für die voraggregierten HRL-Produkte (nicht Sentinel-Rohdaten) ist der
-    WCS-Endpunkt oft direkter als STAC.
+    Hinweis: EEA stellt die HRL-Layer über ArcGIS ImageServer bereit.
+    Die OGC-WCS-Extension (WCSServer) ist auf dem EEA-Server deaktiviert;
+    daher wird der native 'exportImage'-Endpunkt genutzt, der standardkonforme
+    GeoTIFFs direkt binär zurückgibt.
 
     Args:
-        layer: Layer-ID, z.B. 'IMD_2018', 'TCD_2018'
+        layer: Layer-ID oder Service-Name, z.B. 'IMD_2018' oder 'HRL_ImperviousnessDensity_2018'
         bbox: [min_lon, min_lat, max_lon, max_lat] in WGS84
         output_path: Ausgabepfad
         resolution_m: Gewünschte Auflösung in Metern
 
     Returns:
-        Pfad zur gespeicherten Datei
+        Pfad zur gespeicherten GeoTIFF-Datei
     """
-    # WCS Base-URL für CLMS HRL
-    wcs_base = "https://image.discomap.eea.europa.eu/arcgis/services/GioLand"
-
-    # Layer-URL-Mapping (EEA DiscoMap WCS)
-    layer_urls = {
-        "IMD_2018": f"{wcs_base}/IMD_2018/ImageServer/WCSServer",
-        "TCD_2018": f"{wcs_base}/TCD_2018/ImageServer/WCSServer",
-        "GRA_2018": f"{wcs_base}/GRA_2018/ImageServer/WCSServer",
-        "WAW_2018": f"{wcs_base}/WAW_2018/ImageServer/WCSServer",
+    # Mapping von Kurznamen auf kanonische EEA ImageServer Service-Namen
+    service_aliases = {
+        "IMD_2018": "HRL_ImperviousnessDensity_2018",
+        "TCD_2018": "HRL_TreeCoverDensity_2018",
+        "GRA_2018": "HRL_Grassland_2018",
+        "FTY_2018": "HRL_ForestType_2018",
+        "WAW_2018": "HRL_WaterWetness_2018",
     }
+    service_name = service_aliases.get(layer, layer)
 
-    if layer not in layer_urls:
-        raise ValueError(f"Unbekannter Layer: {layer}. Verfügbar: {list(layer_urls)}")
+    # ArcGIS REST ImageServer exportImage URL
+    base_url = "https://image.discomap.eea.europa.eu/arcgis/rest/services/GioLandPublic"
+    export_url = f"{base_url}/{service_name}/ImageServer/exportImage"
 
-    # WCS GetCoverage Request
+    # Bilddimensionen anhand Bounding Box und Zielauflösung berechnen
+    width = max(1, int((bbox[2] - bbox[0]) * 111320 / resolution_m))
+    height = max(1, int((bbox[3] - bbox[1]) * 111320 / resolution_m))
+
     params = {
-        "SERVICE": "WCS",
-        "VERSION": "1.0.0",
-        "REQUEST": "GetCoverage",
-        "COVERAGE": "1",
-        "CRS": "EPSG:4326",
-        "BBOX": ",".join(str(x) for x in bbox),
-        "WIDTH": str(int((bbox[2] - bbox[0]) * 111320 / resolution_m)),
-        "HEIGHT": str(int((bbox[3] - bbox[1]) * 111320 / resolution_m)),
-        "FORMAT": "GeoTIFF",
+        "bbox": f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}",
+        "bboxSR": "4326",
+        "imageSR": "4326",
+        "size": f"{width},{height}",
+        "format": "tiff",
+        "f": "image",
     }
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info("WCS-Request für Layer '%s': %s", layer, layer_urls[layer])
-    response = requests.get(layer_urls[layer], params=params, timeout=120, stream=True)
+    logger.info("EEA DiscoMap Export für '%s': %s (size=%dx%d)", service_name, export_url, width, height)
+    response = requests.get(export_url, params=params, timeout=120, stream=True)
     response.raise_for_status()
+
+    # Prüfung ob Content-Type tatsächlich ein TIFF ist (statt z.B. JSON-Fehlermeldung)
+    content_type = response.headers.get("Content-Type", "")
+    if "json" in content_type:
+        error_info = response.json()
+        raise RuntimeError(f"EEA DiscoMap Fehler: {error_info}")
 
     with open(output_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
 
     size_mb = output_path.stat().st_size / 1024 / 1024
-    logger.info("✅ WCS-Download: %s (%.1f MB)", output_path, size_mb)
+    logger.info("✅ EEA DiscoMap Download: %s (%.2f MB)", output_path, size_mb)
     return output_path

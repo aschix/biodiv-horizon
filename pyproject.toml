@@ -63,3 +63,8 @@ select = ["E", "F", "I", "UP"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "nbstripout>=0.9.1",
+]

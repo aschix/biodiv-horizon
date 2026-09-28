@@ -1,4 +1,4 @@
-﻿# AGENTS.md – Kontext & Arbeitsanweisungen für BioDiv-Horizon
+# AGENTS.md – Kontext & Arbeitsanweisungen für BioDiv-Horizon
 
 > **Zweck dieses Dokuments:** Dieses Dokument dient als primäre Arbeitsanweisung und Wissensbasis für KI-Agenten (Antigravity, Claude Code, Cursor) in diesem Repository. Es definiert Projektziele, Architekturrichtlinien, wichtige Referenzen und die Arbeitsweise mit Daniel.
 
@@ -36,6 +36,7 @@ Jeder Agent **muss** sich vor der Arbeit an diesen Kerndokumenten orientieren:
 | [PLAN.md](PLAN.md) | **Der Master-Fahrplan:** Alle Sprints (1 bis 7), detaillierte Aufgaben, Datenlayer-Listen, Zeitplan und offene Punkte. | **Zu Beginn jeder Session/Sprints** und zum Abhaken erledigter Tasks. |
 | [docs/copernicus_clients.md](docs/copernicus_clients.md) | **Client-Entscheidungsmatrix:** Übersicht der 6 Zugangswege (`rioxarray`, `pystac-client`, `OWSLib`, `openeo`, `eodag`, `requests`), Code-Snippets und Sprint-2a/2b-Strategie. | Bei allen Aufgaben rund um Copernicus CLMS-Downloads. |
 | [docs/copernicus_guide.md](docs/copernicus_guide.md) | **Ausführlicher Copernicus-Guide:** Ökosystem, CDSE vs. EEA DiscoMap, WCS-Eigenheiten, Layer-IDs und Troubleshooting. | Bei tiefgehenden Fragen zu CLMS-APIs oder Fehlersuche. |
+| [docs/QGIS.md](docs/QGIS.md) | **QGIS Quickstart Guide:** Installation, basemap.at Basiskarten, Styling der 5 CLMS-Raster und Inspektion von GeoParquet. | Für visuelle Qualitätskontrolle und GIS-Inspektion. |
 | [README.md](README.md) | Schnelleinstieg, Projektstruktur, Testgebiets-Koordinaten und GBIF-Leitarten. | Für schnelle Übersichten und Setup-Befehle. |
 | [notebooks/](notebooks/) | Interaktive Jupyter-Notebooks für explorative Prototypen (`01_explore_cdse_stac.ipynb`, `02a_...`, etc.). | Für interaktive Analysen und didaktische Schritte. |
 | [src/biodiv_horizon/](src/biodiv_horizon/) | Das produktive Python-Paket (`ingestion`, `processing`, `analytics`, `api`). | Für modularen, getesteten Produktivcode ab Sprint 2b. |

@@ -94,56 +94,84 @@ LEITARTEN: dict[str, dict] = {
 # --- Copernicus CLMS Layer-Definitionen (Single Source of Truth) ---
 CLMS_LAYERS: dict[str, dict] = {
     "tree_cover": {
+        "short_code": "TCD",
         "description": "Baumbestand / Tree Cover Density (%)",
-        "unit": "%",
+        "unit": "% (0-100)",
         "range": (0, 100),
-        "colormap": "Greens",
-        "filename": "tree_cover_density.tif",
-        "source": "stac",
+        "colormap": "YlGn",
+        "filename": "tcd_2024_donau_auen.tif",
+        "source": "cdse_stac",
         "stac_collection": "clms_vlcc_tree-cover-density_europe_10m_yearly_v1",
+        "eea_service": "HRL_TreeCoverDensity_2018",
         "wcs_layer": "HRL_TreeCoverDensity_2018",
     },
     "grassland": {
-        "description": "Grünland (binär: 0/1)",
-        "unit": "binär",
+        "short_code": "GRA",
+        "description": "Grünland / Grassland (binär)",
+        "unit": "binär (0/1)",
         "range": (0, 1),
-        "colormap": "YlGn",
-        "filename": "grassland.tif",
-        "source": "stac",
+        "colormap": "RdYlGn",
+        "filename": "gra_2024_donau_auen.tif",
+        "source": "cdse_stac",
         "stac_collection": "clms_vlcc_grassland_europe_10m_yearly_v1",
+        "eea_service": "HRL_Grassland_2018",
         "wcs_layer": "HRL_Grassland_2018",
     },
     "forest_type": {
-        "description": "Waldtyp (Laub-/Nadel-/Mischwald)",
-        "unit": "Klassen",
-        "range": (1, 3),
-        "colormap": "Dark2",
-        "filename": "forest_type.tif",
-        "source": "stac",
+        "short_code": "FTY",
+        "description": "Waldtyp / Forest Type (Laub-/Nadel-/Mischwald)",
+        "unit": "Klasse (0=kein Wald, 1=Laub, 2=Nadel)",
+        "range": (0, 2),
+        "colormap": "Greens",
+        "filename": "fty_2018_donau_auen.tif",
+        "source": "eea_rest",
         "stac_collection": "clms_vlcc_forest-type_europe_10m_3yearly_v1",
+        "eea_service": "HRL_ForestType_2018",
         "wcs_layer": "HRL_ForestType_2018",
     },
     "imperviousness": {
-        "description": "Versiegelungsgrad (%)",
-        "unit": "%",
+        "short_code": "IMD",
+        "description": "Versiegelungsgrad / Imperviousness Density (%)",
+        "unit": "% (0-100)",
         "range": (0, 100),
-        "colormap": "Reds",
-        "filename": "imperviousness_density.tif",
-        "source": "wcs",
-        "stac_collection": None,  # Auf CDSE STAC nicht als Einzel-Layer -> EEA DiscoMap
+        "colormap": "YlOrRd",
+        "filename": "imd_2018_donau_auen.tif",
+        "source": "eea_rest",
+        "stac_collection": None,
+        "eea_service": "HRL_ImperviousnessDensity_2018",
         "wcs_layer": "HRL_ImperviousnessDensity_2018",
     },
     "water_wetness": {
-        "description": "Wasserflächen & Feuchtgebiete (binär: 0/1)",
-        "unit": "binär",
-        "range": (0, 1),
+        "short_code": "WAW",
+        "description": "Wasserflächen & Feuchtgebiete / Water & Wetness",
+        "unit": "Klasse (0=trocken, 1=feucht, 2=Wasser)",
+        "range": (0, 2),
         "colormap": "Blues",
-        "filename": "water_wetness.tif",
-        "source": "wcs",
-        "stac_collection": None,  # Auf CDSE STAC unvollständig -> EEA DiscoMap
+        "filename": "waw_2018_donau_auen.tif",
+        "source": "eea_rest",
+        "stac_collection": None,
+        "eea_service": "HRL_WaterWetness_2018",
         "wcs_layer": "HRL_WaterWetness_2018",
     },
 }
+
+# Lookup-Dictionary für bequemen Zugriff via Kurzcode (z. B. CLMS_LAYERS_BY_CODE['IMD'])
+CLMS_LAYERS_BY_CODE: dict[str, dict] = {
+    cfg["short_code"]: cfg for cfg in CLMS_LAYERS.values()
+}
+
+
+def get_clms_layer(key_or_code: str) -> dict:
+    """Gibt Layer-Konfiguration anhand des Langnamens ('tree_cover') oder Kurzcodes ('TCD') zurück."""
+    if key_or_code in CLMS_LAYERS:
+        return CLMS_LAYERS[key_or_code]
+    if key_or_code in CLMS_LAYERS_BY_CODE:
+        return CLMS_LAYERS_BY_CODE[key_or_code]
+    raise KeyError(
+        f"Unbekannter CLMS-Layer: '{key_or_code}'. "
+        f"Gültig sind: {list(CLMS_LAYERS.keys())} oder {list(CLMS_LAYERS_BY_CODE.keys())}"
+    )
+
 
 # --- Datenqualität GBIF ---
 GBIF_QUALITY_FILTERS = {

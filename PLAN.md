@@ -201,41 +201,58 @@ for item in results.items():
 
 ---
 
-### Sprint 2: Copernicus-Daten herunterladen & als COG speichern (2–3 Tage)
+### Sprint 2a: Manueller CLMS-Download (Lernzweck) — ✅ ABGESCHLOSSEN 2026-09-23
+
+> **Lernziel erreicht:** HTTP-Mechanismen, EEA-API, CDSE STAC verstanden.
 
 #### Aufgaben
-1. **Notebook** `02_download_clms_layers.ipynb`:
-   - Die 4 CLMS-Raster-Layer für das Testgebiet herunterladen
-   - Mit `rasterio` / `rioxarray` auf Testgebiet zuschneiden (clip to bounding box)
-   - Als Cloud Optimized GeoTIFF (COG) lokal speichern
+1. ✅ **Notebook** `02a_download_clms_manual.ipynb` erstellt und getestet
+2. ✅ **EEA REST `exportImage`:** IMD, WAW, FTY via `requests.get()` heruntergeladen
+3. ✅ **CDSE STAC:** VLCC-Collections (TCD, GRA) abgefragt, Item-Struktur verstanden
+4. ✅ **OAuth2 ROPC Flow** für CDSE-Auth implementiert (ZIP-Download + Clip)
+5. ✅ **HTTP Range Request Demo** — COG-Streaming-Mechanismus erklärt
+6. ✅ **Ökologischer Plausibilitäts-Check** implementiert
+
+#### Ergebnis-Dateien
+```
+data/raw/copernicus/
+├── imd_2018_donau_auen.tif   (433 KB, EPSG:3857, 844×388px @~60m)  ← EEA REST
+├── waw_2018_donau_auen.tif   (369 KB, EPSG:3857, 844×388px @~60m)  ← EEA REST
+└── fty_2018_donau_auen.tif   (401 KB, EPSG:3857, 844×388px @~60m)  ← EEA REST
+```
+
+#### Key Learnings Sprint 2a
+- EEA reprojiiziert serverseitig nach **EPSG:3857** (Web Mercator) — nicht 4326!
+- CDSE VLCC `data`-Assets sind `s3://`-URLs → COG-Streaming via GDAL/rioxarray (Sprint 2b)
+- CDSE `product`-Assets sind HTTPS-OData → benötigen Bearer-Token, liefern ZIP (~200-500 MB)
+- TCD und GRA in CDSE kommen in **EPSG:3035** (metrisch, LAEA)
+- Kachel-ID `E48N28` = Donau-Auen liegt auf dieser 100km×100km-Kachel
+
+#### Collections (verifiziert 2026-09-23)
+| Layer | CDSE STAC Collection | Letzte verfügbare Daten |
+|:---|:---|:---|
+| TCD | `clms_vlcc_tree-cover-density_europe_10m_yearly_v1` | 2024-01-01 |
+| GRA | `clms_vlcc_grassland_europe_10m_yearly_v1` | 2024-01-01 |
+| FTY | `clms_vlcc_forest-type_europe_10m_3yearly_v1` | 2024-01-01 |
+
+---
+
+### Sprint 2b: COG-Streaming via rioxarray & Reprojektion (TODO)
+
+#### Aufgaben
+1. **Notebook** `02b_download_clms_rioxarray.ipynb`:
+   - CDSE STAC → direktes COG-Streaming mit `rioxarray.open_rasterio(s3_url)` via GDAL VSICURL
+   - Alle 5 Layer auf **EPSG:3035** reprojizieren (`resampling='bilinear'` für %, `'nearest'` für Klassen)
+   - Als COG mit DEFLATE-Kompression speichern
 2. **`src/biodiv_horizon/ingestion/copernicus.py`**: Wiederverwendbare Download-Funktion
 
 #### Erwartetes Ergebnis
-4 lokale COG-Dateien unter `data/raw/copernicus/`, je ca. 5–50 MB, zugeschnitten auf das Testgebiet.
-
-#### Code-Skizze
-```python
-import rioxarray
-import rasterio
-from rasterio.enums import Resampling
-
-def download_and_clip_clms(
-    stac_item, bbox, output_path, target_crs="EPSG:31287"
-):
-    """Download a CLMS layer, clip to bbox, reproject to Austrian CRS."""
-    href = stac_item.assets["data"].href
-    ds = rioxarray.open_rasterio(href, chunks="auto")
-    clipped = ds.rio.clip_box(*bbox)
-    reprojected = clipped.rio.reproject(target_crs)
-    reprojected.rio.to_raster(
-        output_path,
-        driver="COG",
-        compress="DEFLATE",
-    )
-```
+5 lokale COG-Dateien unter `data/raw/copernicus/`, alle in EPSG:3035, ~5–15 MB pro Datei.
 
 > [!NOTE]
-> **CRS-Entscheidung:** Für Österreich-bezogene Analysen empfiehlt sich **EPSG:31287** (MGI / Austria Lambert) als Projektions-CRS für metrische Berechnungen. Für die Web-Darstellung wird on-the-fly nach **EPSG:3857** (Web Mercator) reprojiziert.
+> **CRS-Entscheidung Sprint 2b:** Alle Layer auf **EPSG:3035** (ETRS89 LAEA Europe) bringen.
+> Das ist das native CRS der VLCC-Layer und ermöglicht verzerrungsfreie Flächenberechnung.
+> Für die Web-Darstellung wird on-the-fly nach **EPSG:3857** (Web Mercator) reprojiiziert.
 
 ---
 
